@@ -28,8 +28,7 @@ public class MyGraphVertex extends Vertex<Text, MapWritable, MapWritable, MapWri
         return totalEdgeWeight;
     }
 
-    //每个vertex的node cost Map存储所有上游分摊给它的比例
-    //这个map的value全部乘上edge的比例，传播给下游
+
     private MapWritable getVertexApportionCostByEdgeRation(double edgeRation){
         MapWritable nodeCostMap = (MapWritable) this.getValue().get(gd.NODE_COST);
         MapWritable newNodeCost = new MapWritable();
@@ -42,7 +41,7 @@ public class MyGraphVertex extends Vertex<Text, MapWritable, MapWritable, MapWri
     }
 
     private void costApportionForSingleVertex(ComputeContext<Text, MapWritable, MapWritable, MapWritable> context) throws IOException {
-        //节点下游表的全部权重之和
+
         double totalEdgeWeight = getVertexDescEdgeTotalWeight();
         for(Edge<Text, MapWritable> edge: this.getEdges()){
             MapWritable msgBody = new MapWritable();
@@ -62,12 +61,10 @@ public class MyGraphVertex extends Vertex<Text, MapWritable, MapWritable, MapWri
     }
 
     private void insertIntoNodeCost(MapWritable apportionedParentNodeCost){
-        //nodeCostMap 构成 nodeId：产品：费用
         MapWritable nodeCostMap = (MapWritable) this.getValue().get(gd.NODE_COST);
-        //apportionedParentNodeCost 构成 nodeId：产品：费用
         if(apportionedParentNodeCost.size() > 0) {
             for (Writable ancestorNodeId : apportionedParentNodeCost.keySet()) {
-                //包含nodeId，需要更新nodeCostMap value
+
                 if (nodeCostMap.containsKey(ancestorNodeId)) {
                     double ancestorNodeRation = ((DoubleWritable)apportionedParentNodeCost.get(ancestorNodeId)).get();
                     double thisNodeRation = ((DoubleWritable)nodeCostMap.get(ancestorNodeId)).get();
@@ -102,7 +99,6 @@ public class MyGraphVertex extends Vertex<Text, MapWritable, MapWritable, MapWri
         HashMap<String,String> nodeList = new HashMap<>();
         if(messages.iterator().hasNext()){
             for(MapWritable msg: messages){
-                //消息包含了上游节点清单
                 if(msg.containsKey(gd.MSG_NODE_LIST)){
                     MapWritable nodeListMap = (MapWritable) msg.get(gd.MSG_NODE_LIST);
                     for(Writable nodeId: nodeListMap.keySet()){
@@ -120,13 +116,6 @@ public class MyGraphVertex extends Vertex<Text, MapWritable, MapWritable, MapWri
         return ((LongWritable) this.getValue().get(gd.NODE_PARENT_CNT)).get() == ((MapWritable)this.getValue().get(gd.NODE_VISITED_VERTEX)).keySet().size();
     }
 
-    /**
-     * vertex的迭代逻辑实现类
-     *
-     * @param context
-     * @param messages
-     * @throws IOException
-     */
     @Override
     public void compute(ComputeContext<Text, MapWritable, MapWritable, MapWritable> context,
         Iterable<MapWritable> messages) throws IOException {
@@ -160,26 +149,21 @@ public class MyGraphVertex extends Vertex<Text, MapWritable, MapWritable, MapWri
             }
             else {
                 //the node must be a leaf node, namely, has no child.
-                //因为超步0发出的是全局消息，因此，节点也没有上游。所以是一个孤立节点，可以将费用写入odps
                 MapWritable nodeCostMap = (MapWritable) this.getValue().get(gd.NODE_COST);
                 for(Writable nodeId: nodeCostMap.keySet()){
                     context.write(this.getId(), nodeId, new Text(nodeCostMap.get(nodeId).toString()));
                 }
-                //清空值
                 clearVertexCost();
             }
             voteToHalt();
         } else if (messages.iterator().hasNext()) {
-            //更新节点的costMap，还有节点的访问清单
             updateCostAndVisitedListFromMsg(messages);
 
-            //如果当前节点的叶子标签是true，或者没有下游是一个真的物理叶子
             if(Boolean.parseBoolean(this.getValue().get(gd.IF_LEAF).toString()) || !this.hasEdges()){
                 MapWritable nodeCostMap = (MapWritable)this.getValue().get(gd.NODE_COST);
                 for (Writable nodeId : nodeCostMap.keySet()) {
                     context.write(this.getId(), nodeId, new Text(nodeCostMap.get(nodeId).toString()));
                 }
-                //节点费用已经记录，可以清楚所有费用记录
                 clearVertexCost();
             }
             else if (this.hasEdges() && canApportion()) {

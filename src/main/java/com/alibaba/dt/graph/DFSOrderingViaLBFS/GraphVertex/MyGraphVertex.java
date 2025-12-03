@@ -74,13 +74,7 @@ public class MyGraphVertex extends Vertex<Text, MapWritable, MapWritable, MapWri
             context.write(this.getId(), this.getValue().get(gd.NODE_LABEL));
         }
     }
-    /**
-     * vertex的迭代逻辑实现类
-     *
-     * @param context
-     * @param messages
-     * @throws IOException
-     */
+    
     @Override
     public void compute(ComputeContext<Text, MapWritable, MapWritable, MapWritable> context,
         Iterable<MapWritable> messages) throws IOException {

@@ -45,10 +45,8 @@ public class Main {
         //output table
         job.addOutput(TableInfo.builder().tableName(args[2]).build());
 
-        //设置edge表的名字到全局变量
         //job.set(gd.SRC_LABEL_TABLE, args[0]);
         job.set(gd.EDGE_TABLE, args[1]);
-        //设置超步上线
         job.setMaxIteration(getMaxSuperStep(args));
         //long startTime = System.currentTimeMillis();
         job.run();

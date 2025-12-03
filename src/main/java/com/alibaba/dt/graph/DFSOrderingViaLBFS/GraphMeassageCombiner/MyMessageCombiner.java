@@ -12,15 +12,6 @@ import java.io.IOException;
 public class MyMessageCombiner extends Combiner<Text, MapWritable> {
     private static final GraphJobDomain gd = new GraphJobDomain();
 
-    /**
-     * 对于发送给同一个vertexId的多个消息进行聚合从而节省空间
-     * combine操作会在两个combinedMessage和 MessageToCombined之间进行
-     *
-     * @param vertexId
-     * @param combinedMessage
-     * @param messageToCombine
-     * @throws IOException
-     */
     @Override
     public void combine(Text vertexId, MapWritable combinedMessage, MapWritable messageToCombine) throws IOException {
         for (Writable nodeId : messageToCombine.keySet()) {
